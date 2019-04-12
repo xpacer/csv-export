@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">CsvExporter</string>
+    <string name="export">Export</string>
+</resources>
