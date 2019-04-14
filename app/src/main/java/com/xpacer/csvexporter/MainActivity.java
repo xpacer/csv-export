@@ -6,14 +6,16 @@ import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Toast;
 
 import com.xpacer.csvexport.CsvExport;
+import com.xpacer.csvexport.OnCsvExportResult;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements OnCsvExportResult {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,10 +55,10 @@ public class MainActivity extends AppCompatActivity {
                     .setFileName("testcsv.csv")
                     .setList(foos)
                     .setStorageWritePermissionRequestCode(1000)
+                    .setExportResult(this)
                     .export();
+
         } catch (IOException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
             e.printStackTrace();
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
@@ -70,5 +72,15 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == 1000) {
             export();
         }
+    }
+
+    @Override
+    public void onExportSuccess() {
+        Toast.makeText(this, "Success", Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    public void onExportError(String errorMessage) {
+        Toast.makeText(this, "Failed. Error Message: ".concat(errorMessage), Toast.LENGTH_LONG).show();
     }
 }

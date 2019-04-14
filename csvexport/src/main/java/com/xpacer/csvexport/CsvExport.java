@@ -44,6 +44,18 @@ public class CsvExport<T> {
      */
     private int storageWritePermissionRequestCode;
 
+    private OnCsvExportResult exportResult;
+
+    public CsvExport() {
+
+    }
+
+    public CsvExport(List<T> list, Activity activity, String directory, String fileName) {
+        this.list = list;
+        this.activity = activity;
+        this.directory = directory;
+        this.fileName = fileName;
+    }
 
     public String getDirectory() {
         return directory;
@@ -117,12 +129,21 @@ public class CsvExport<T> {
         return this;
     }
 
+    public OnCsvExportResult getExportResult() {
+        return exportResult;
+    }
+
+    public CsvExport<T> setExportResult(OnCsvExportResult exportResult) {
+        this.exportResult = exportResult;
+        return this;
+    }
+
     /**
      * Method to export list of objects to csv file
+     *
      * @throws IOException
-     * @throws IllegalAccessException
      */
-    public void export() throws IOException, IllegalAccessException {
+    public void export() throws IOException {
         CsvExportManager<T> exportManager = new CsvExportManager<>(this);
         exportManager.export();
     }

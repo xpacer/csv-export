@@ -13,6 +13,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
 
 class CsvExportManager<T> {
 
@@ -23,7 +25,7 @@ class CsvExportManager<T> {
         this.csvExport = csvExport;
     }
 
-    void export() throws IOException, IllegalAccessException {
+    void export() throws IOException {
 
         if (csvExport.getList() == null || csvExport.getList().isEmpty())
             throw new IllegalArgumentException("Passed list argument cannot be null or empty");
@@ -53,10 +55,7 @@ class CsvExportManager<T> {
 
         String fileName = csvExport.getFileName();
         File dir = new File(csvExport.getDirectory());
-
-        if (!dir.mkdirs()) {
-            throw new IOException("Unable to create file at the specified directory");
-        }
+        dir.mkdirs();
 
         File file = new File(dir, fileName);
         try {
@@ -64,16 +63,21 @@ class CsvExportManager<T> {
             OutputStreamWriter outputStreamWriter = new OutputStreamWriter(fo);
             BufferedWriter bw = new BufferedWriter(outputStreamWriter);
 
+            List<String> titleLineList = getCsvTitles(csvExport.getList().get(0));
+
             if (csvExport.isIncludeTitle()) {
-                String titleLine = getCsvTitle(csvExport.getList().get(0));
+                String titleLine = TextUtils.join(csvExport.getDelimiter(), titleLineList);
                 bw.write(titleLine);
                 bw.newLine();
             }
 
             for (T object : csvExport.getList()) {
+
                 StringBuilder oneLine = new StringBuilder();
-                for (Field f : object.getClass().getDeclaredFields()) {
-                    oneLine.append(f.get(object)).append(csvExport.getDelimiter());
+
+                for (String property : titleLineList) {
+                    Object fieldValue = object.getClass().getField(property).get(object);
+                    oneLine.append(fieldValue).append(csvExport.getDelimiter());
                 }
 
                 bw.write(oneLine.toString());
@@ -82,25 +86,39 @@ class CsvExportManager<T> {
 
             bw.flush();
             bw.close();
+            if (csvExport.getExportResult() != null)
+                csvExport.getExportResult().onExportSuccess();
         } catch (IOException e) {
             throw new IOException(e.getMessage(), e.getCause());
         } catch (IllegalAccessException e) {
-            throw new IllegalAccessException(e.getMessage());
+            e.printStackTrace();
+            if (csvExport.getExportResult() != null)
+                csvExport.getExportResult().onExportError(e.getMessage());
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+            if (csvExport.getExportResult() != null)
+                csvExport.getExportResult().onExportError(e.getMessage());
         }
     }
 
-
-    private String getCsvTitle(@NonNull T fObject) {
-        StringBuilder oneLine = new StringBuilder();
+    private List<String> getCsvTitles(@NonNull T fObject) {
+        List<String> csvTitles = new ArrayList<>();
 
         for (Field f : fObject.getClass().getDeclaredFields()) {
-            if (csvExport.getExcludedProperties() != null &&
+            String fieldName = f.getName();
+
+            if (fieldName.equalsIgnoreCase("$change") ||
+                    fieldName.equalsIgnoreCase("serialversionUID")) {
+                continue;
+            }
+
+            if (csvExport.getExcludedProperties() == null ||
                     !csvExport.getExcludedProperties().contains(f.getName())) {
-                oneLine.append(f.getName()).append(csvExport.getDelimiter());
+                csvTitles.add(f.getName());
             }
         }
 
-        return oneLine.toString();
+        return csvTitles;
     }
 
 
